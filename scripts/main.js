@@ -1,37 +1,16 @@
 function Paddle(xPos, yPos, width, height, speed, context) {
     this.xPosition = xPos;
     this.yPosition = yPos;
+    this.initalPosition = yPos;
     this.width = width;
     this.height = height;
     this.context = context;
     this.speed = speed;
 }
 
-function Ball(initialXPos, initialYPos, radius, context) {
-    this.xPosition = initialXPos;
-    this.yPosition = initialYPos;
-    this.initialX = initialXPos;
-    this.initialY = initialYPos;
-    this.radius = radius;
-    this.context = context;
-}
-
-function Player(context) {
-    this.paddle = new Paddle(10, 237.5, 8, 75, 10, context);
-    this.paddle.leadingEdge = this.paddle.xPosition
-    this.paddle.backEdge = this.paddle.xPosition + this.paddle.width;
-}
-
-function Computer(context) {
-    this.paddle = new Paddle(782, 237.5, 8, 75, 10, context);
-    this.paddle.leadingEdge = this.paddle.xPosition + this.paddle.width;
-    this.paddle.backEdge = this.paddle.xPosition;
-}
-
 Paddle.prototype.render = function () {
     this.context.beginPath();
     this.context.rect(this.xPosition, this.yPosition, this.width, this.height);
-    this.context.fillStyle = 'green';
     this.context.fill();
 };
 
@@ -46,15 +25,6 @@ Paddle.prototype.move = function (direction) {
         if (this.yPosition >= (this.context.canvas.height - this.height)) {
             this.yPosition = this.context.canvas.height - this.height;
         }
-    }
-};
-
-Player.prototype.move = function (input) {
-    if(input[38]){
-        this.paddle.move("up");
-    }
-    if(input[40]){
-        this.paddle.move("down");
     }
 };
 
@@ -80,21 +50,97 @@ Paddle.prototype.hitDetected = function (ballX, ballY, screenSide) {
     }
 };
 
-Ball.prototype.serve = function () {
-    this.xPosition = this.initialX;
-    this.yPosition = this.initialY;
-    this.xSpeed = (Math.random()* 15 ) - 11.5;
-    this.ySpeed = (Math.random()* 15 ) - 11.5;
-    if(this.xSpeed >= 0 && this.xSpeed < 7 ){
-        this.xSpeed = 7;
-    } else if(this.xSpeed < 0 && this.xSpeed > -7){
-        this.xSpeed = -7;
+Paddle.prototype.reset = function () {
+    this.yPosition = this.initalPosition;
+};
+
+function Player(context) {
+    this.paddle = new Paddle(782, 237.5, 8, 75, 7.5, context);
+    this.paddle.leadingEdge = this.paddle.xPosition
+    this.paddle.backEdge = this.paddle.xPosition + this.paddle.width;
+    this.score = 0;
+}
+
+Player.prototype.render = function () {
+    this.paddle.render();
+};
+
+Player.prototype.move = function (input) {
+    if(input[38]){
+        this.paddle.move("up");
     }
-    if(this.ySpeed >= 0 && this.ySpeed < 7) {
-        this.ySpeed = 7;
-    } else if(this.ySpeed < 0 && this.xSpeed > -7) {
-        this.ySpeed = -7;
+    if(input[40]){
+        this.paddle.move("down");
     }
+};
+
+Player.prototype.hitDetected = function (ballX, ballY) {
+    return this.paddle.hitDetected(ballX, ballY, "r");
+};
+
+Player.prototype.reset = function () {
+    this.paddle.reset();
+};
+
+function Computer(context) {
+    this.paddle = new Paddle(10, 237.5, 8, 75, 10, context);
+    this.paddle.leadingEdge = this.paddle.xPosition + this.paddle.width;
+    this.paddle.backEdge = this.paddle.xPosition;
+    this.score = 0;
+}
+
+Computer.prototype.render = function () {
+    this.paddle.render();
+};
+
+Computer.prototype.move = function(ballY) {
+    var center = this.paddle.yPosition + (this.paddle.height / 2);
+    var distanceToMove = ballY - center;
+    var amISupid = Math.random() > .7;
+    if (amISupid){
+        distanceToMove = distanceToMove * ((Math.random() * 2) - 1);
+    }
+    if (distanceToMove > 0){
+        if (distanceToMove > this.paddle.speed){
+            this.paddle.move("down");
+        } else {
+            this.paddle.yPosition += distanceToMove;
+        }
+    } else if (distanceToMove < 0){
+        if (distanceToMove < this.paddle.speed) {
+            this.paddle.move("up");
+        } else{
+            this.paddle.yPosition -= distanceToMove;
+        }
+    }
+    if (this.paddle.yPosition >= (this.paddle.context.canvas.height - this.height)){
+        this.paddle.yPosition = this.context.canvas.height - this.height;
+    } else if (this.paddle.yPosition < 0) {
+        this.paddle.yPosition = 0;
+    }
+};
+
+Computer.prototype.hitDetected = function (ballX, ballY) {
+    return this.paddle.hitDetected(ballX, ballY, "l");
+};
+
+Computer.prototype.reset = function () {
+    this.paddle.reset();
+}
+
+function Ball(initialXPos, initialYPos, radius, context) {
+    this.xPosition = initialXPos;
+    this.yPosition = initialYPos;
+    this.initialX = initialXPos;
+    this.initialY = initialYPos;
+    this.radius = radius;
+    this.context = context;
+}
+
+Ball.prototype.render = function () {
+    this.context.beginPath();
+    this.context.arc(this.xPosition, this.yPosition, this.radius, 0, 2 * Math.PI, false);
+    this.context.fill();
 };
 
 Ball.prototype.updatePosition = function () {
@@ -113,28 +159,32 @@ Ball.prototype.updatePosition = function () {
     
     this.xPosition = updatedX;
     this.yPosition = updatedY;
+    
+    if(this.xPosition > player.paddle.xPosition + player.paddle.width) {
+        player.score++;
+        serve();
+
+    } else if(this.xPosition < computer.paddle.xPosition - computer.paddle.width){
+        computer.score++;
+        serve();
+    }
 };
 
-Ball.prototype.render = function () {
-    this.context.beginPath();
-    this.context.arc(this.xPosition, this.yPosition, this.radius, 0, 2 * Math.PI, false);
-    this.context.fill();
-};
-
-Player.prototype.hitDetected = function (ballX, ballY) {
-    return this.paddle.hitDetected(ballX, ballY, "r");
-};
-
-Computer.prototype.hitDetected = function (ballX, ballY) {
-    return this.paddle.hitDetected(ballX, ballY, "l");
-};
-
-Player.prototype.render = function () {
-    this.paddle.render();
-};
-
-Computer.prototype.render = function () {
-    this.paddle.render();
+Ball.prototype.serve = function () {
+    this.xPosition = this.initialX;
+    this.yPosition = this.initialY;
+    this.xSpeed = (Math.random()* 22 ) - 11.5;
+    this.ySpeed = (Math.random()* 22 ) - 11.5;
+    if(this.xSpeed >= 0 && this.xSpeed < 7 ){
+        this.xSpeed = 7;
+    } else if(this.xSpeed < 0 && this.xSpeed > -7){
+        this.xSpeed = -7;
+    }
+    if(this.ySpeed >= 0 && this.ySpeed < 7) {
+        this.ySpeed = 7;
+    } else if(this.ySpeed < 0 && this.xSpeed > -7) {
+        this.ySpeed = -7;
+    }
 };
 
 var canvas = document.getElementById("pongTable");
@@ -143,7 +193,7 @@ var player = new Player(context);
 var computer = new Computer(context);
 var ball = new Ball(400, 275, 5, context);
 var playerInput = {};
-context.fillStyle = 'white';
+context.fillStyle = 'green';
 
 var animate = window.requestAnimationFrame ||
         window.webkitRequestAnimationFrame ||
@@ -151,6 +201,12 @@ var animate = window.requestAnimationFrame ||
         window.oRequestAnimationFrame ||
         window.msRequestAnimationFrame ||
         function (step) { window.setTimeout(step, 1000 / 60); };
+
+function serve() {
+    ball.serve();
+    computer.reset();
+    player.reset();
+}
 
 function render() {
     player.render();
@@ -161,6 +217,7 @@ function render() {
 function step() {
     context.clearRect(0, 0, canvas.width, canvas.height);
     player.move(playerInput);
+    computer.move(ball.yPosition);
     ball.updatePosition();
     render();
     animate(step);
@@ -178,6 +235,6 @@ window.onload = function () {
         }
         playerInput[event.keyCode] = true;
     });
-    ball.serve();
+    serve();
     animate(step);
 };
