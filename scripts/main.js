@@ -96,9 +96,9 @@ Computer.prototype.render = function () {
 Computer.prototype.move = function(ballY) {
     var center = this.paddle.yPosition + (this.paddle.height / 2);
     var distanceToMove = ballY - center;
-    var amISupid = Math.random() > .7;
+    var amISupid = Math.random() > .67;
     if (amISupid){
-        distanceToMove = distanceToMove * ((Math.random() * 2) - 1);
+        distanceToMove = distanceToMove * ((Math.random() * 2) - 1.1);
     }
     if (distanceToMove > 0){
         if (distanceToMove > this.paddle.speed){
@@ -187,11 +187,26 @@ Ball.prototype.serve = function () {
     }
 };
 
+function ScoreBoard(width, height, context) {
+    this.xCenter = context.canvas.width / 2;
+    this.xPosition = this.xCenter - (width / 2);
+    this.yPosition = context.canvas.height * 0.1;
+    this.width = width;
+    this.height = height;
+    this.context = context;
+}
+
+ScoreBoard.prototype.render = function () {
+    this.context.font = "40px Verdana";
+    this.context.fillText(computer.score + " - " + player.score, this.xCenter - 48, this.yPosition + this.height / 2);
+};
+
 var canvas = document.getElementById("pongTable");
 var context = canvas.getContext('2d');
 var player = new Player(context);
 var computer = new Computer(context);
 var ball = new Ball(400, 275, 5, context);
+var scoreBoard = new ScoreBoard(150, 100, context);
 var playerInput = {};
 context.fillStyle = 'green';
 
@@ -212,6 +227,7 @@ function render() {
     player.render();
     computer.render();
     ball.render();
+    scoreBoard.render();
 }
 
 function step() {
